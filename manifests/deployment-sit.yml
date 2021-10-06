@@ -1,0 +1,36 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: famstransactionerrormanager
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: famstransactionerrormanager
+  template:
+    metadata:
+      labels:
+        app: famstransactionerrormanager
+    spec:
+      containers:
+        - name: famstransactionerrormanager
+          image: cstarregistry.azurecr.io/famstransactionerrormanager
+          ports:
+            - containerPort: 8080
+          envFrom:
+            - secretRef:
+                name: postgres-credentials
+            - secretRef:
+                name: famstransactionerrormanager
+            - configMapRef:
+                name: eventhub-logging
+            - configMapRef:
+                name: eventhub-common
+            - configMapRef:
+                name: famstransactionerrormanager
+            - configMapRef:
+                name: jvm
+      hostAliases:
+        - hostnames:
+            - bpd-hub-dev.servicebus.windows.net
+          ip: 10.70.5.9

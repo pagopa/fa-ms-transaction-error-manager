@@ -1,0 +1,16 @@
+apiVersion: apps/v1beta1
+kind: Deployment
+metadata:
+  name: famstransactionerrormanager
+spec:
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: famstransactionerrormanager
+    spec:
+      containers:
+        - name: famstransactionerrormanager
+          image: cstarregistry.azurecr.io/famstransactionerrormanager
+          ports:
+            - containerPort: 8080
