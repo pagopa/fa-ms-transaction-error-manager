@@ -94,8 +94,8 @@ public class TransactionRecord extends BaseEntity {
     @Column(name = "exception_message_s")
     String exceptionMessage;
 
-    @Column(name = "citizen_validation_date_t")
-    OffsetDateTime citizenValidationDate;
+    @Column(name = "customer_validation_date_t")
+    OffsetDateTime customerValidationDate;
 
     @Column(name = "last_resubmit_date_t")
     OffsetDateTime lastResubmitDate;

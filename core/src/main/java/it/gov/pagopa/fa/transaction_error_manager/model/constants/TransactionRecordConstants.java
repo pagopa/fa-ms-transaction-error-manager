@@ -9,7 +9,7 @@ import java.util.Map;
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class TransactionRecordConstants {
 
-    public static final String CITIZEN_VALIDATION_DATETIME_HEADER = "CITIZEN_VALIDATION_DATETIME";
+    public static final String CUSTOMER_VALIDATION_DATETIME_HEADER = "CUSTOMER_VALIDATION_DATETIME";
     public static final String EXCEPTION_HEADER = "ERROR_DESC";
     public static final String LISTENER_HEADER = "LISTENER";
     public static final String REQUEST_ID_HEADER = "x-request-id";

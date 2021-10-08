@@ -14,7 +14,7 @@ import org.springframework.test.context.TestPropertySource;
 
 @Import({FaCashbackTransactionPublisherConnector.class})
 @TestPropertySource(
-        locations = "classpath:config/testFaCashbackTransactionPublisher.properties",
+        locations = "classpath:config/testFaCustomerTransactionPublisher.properties",
         properties = {
                 "connectors.eventConfigurations.items.FaCashbackTransactionPublisherConnector.bootstrapServers=${spring.embedded.kafka.brokers}"
         })

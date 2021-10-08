@@ -50,8 +50,4 @@ public class Transaction {
 
     String fiscalCode;
 
-    BigDecimal score;
-
-    Long awardPeriodId;
-
 }

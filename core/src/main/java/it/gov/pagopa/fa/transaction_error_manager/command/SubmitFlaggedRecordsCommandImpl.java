@@ -94,10 +94,10 @@ class SubmitFlaggedRecordsCommandImpl extends BaseCommand<Boolean> implements Su
                                     transactionRecord.getOriginListener() == null ?
                                             null :
                                             transactionRecord.getOriginListener().getBytes());
-                            recordHeaders.add(TransactionRecordConstants.CITIZEN_VALIDATION_DATETIME_HEADER,
-                                    transactionRecord.getCitizenValidationDate() == null ?
+                            recordHeaders.add(TransactionRecordConstants.CUSTOMER_VALIDATION_DATETIME_HEADER,
+                                    transactionRecord.getCustomerValidationDate() == null ?
                                             null :
-                                            transactionRecord.getCitizenValidationDate().toString().getBytes());
+                                            transactionRecord.getCustomerValidationDate().toString().getBytes());
 
                             switch (transactionRecord.getOriginTopic()) {
                                 case "fa-trx":

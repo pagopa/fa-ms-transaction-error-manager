@@ -86,8 +86,8 @@ class SaveTransactionRecordCommandImpl extends BaseCommand<Boolean> implements S
             transactionRecord.setOriginRequestId(
                     requestIdHeader == null ? null : new String(requestIdHeader.value()));
             Header validationTimeHeader = headers.lastHeader(
-                    TransactionRecordConstants.CITIZEN_VALIDATION_DATETIME_HEADER);
-            transactionRecord.setCitizenValidationDate(
+                    TransactionRecordConstants.CUSTOMER_VALIDATION_DATETIME_HEADER);
+            transactionRecord.setCustomerValidationDate(
                     validationTimeHeader == null || validationTimeHeader.value() == null ? null :
                             OffsetDateTime.parse(new String(validationTimeHeader.value())));
             transactionRecord.setRecordId(UUID.randomUUID().toString());

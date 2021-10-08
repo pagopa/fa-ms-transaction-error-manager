@@ -30,7 +30,7 @@ import java.time.OffsetDateTime;
         properties = {
                 "listeners.eventConfigurations.items.OnTransactionErrorRequestListener.bootstrapServers=${spring.embedded.kafka.brokers}"
         })
-public class OnPointProcessorTransactionErrorRequestListenerTest extends BaseEventListenerTest {
+public class OnTransactionErrorRequestListenerTest extends BaseEventListenerTest {
 
 
     @SpyBean

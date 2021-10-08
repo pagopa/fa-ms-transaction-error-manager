@@ -171,8 +171,6 @@ public class SaveTransactionRecordCommandImplTest extends BaseTest {
                 .amountCurrency("833")
                 .correlationId("1")
                 .acquirerId("0")
-                .awardPeriodId(1L)
-                .score(BigDecimal.ONE)
                 .bin("000001")
                 .terminalId("0")
                 .fiscalCode("fiscalCode")

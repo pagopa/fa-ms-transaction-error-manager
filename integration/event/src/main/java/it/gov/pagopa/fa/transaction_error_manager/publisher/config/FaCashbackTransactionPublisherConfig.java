@@ -8,6 +8,6 @@ import org.springframework.context.annotation.PropertySource;
  */
 
 @Configuration
-@PropertySource("classpath:config/faCashbackTransactionPublisher.properties")
+@PropertySource("classpath:config/faCustomerTransactionPublisher.properties")
 public class FaCashbackTransactionPublisherConfig {
 }
