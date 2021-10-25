@@ -27,3 +27,5 @@ spec:
                 name: famstransactionerrormanager
             - secretRef:
                 name: famstransactionerrormanager
+            - configMapRef:
+                name: eventhub-common
