@@ -9,7 +9,6 @@ import it.gov.pagopa.fa.transaction_error_manager.service.FaTransactionPublisher
 import it.gov.pagopa.fa.transaction_error_manager.service.RtdTransactionPublisherService;
 import it.gov.pagopa.fa.transaction_error_manager.service.TransactionRecordService;
 import it.gov.pagopa.fa.transaction_error_manager.service.mapper.TransactionMapper;
-import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
