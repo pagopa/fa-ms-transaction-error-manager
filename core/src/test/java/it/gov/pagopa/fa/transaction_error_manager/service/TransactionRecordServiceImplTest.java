@@ -114,6 +114,6 @@ public class TransactionRecordServiceImplTest extends BaseTest {
         List find = transactionRecordService.findRecord(getRecord());
 
         verify(transactionRecordDAOMock).findTransaction(any(),any(),any(),any(),any());
-        assertEquals(find,null);
+        assertEquals(null,find);
     }
 }

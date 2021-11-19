@@ -118,7 +118,7 @@ public class FaTransactionErrorManagerControllerImplTest {
                 List.class);
 
         assertNotNull(pageResult);
-        verify(transactionRecordService).findRecord(eq(getRecord()));
+        verify(transactionRecordService).findRecord(getRecord());
     }
 
     @Test
@@ -132,7 +132,7 @@ public class FaTransactionErrorManagerControllerImplTest {
                 .andExpect(MockMvcResultMatchers.status().is2xxSuccessful())
                 .andReturn();
 
-        verify(transactionRecordService).findRecord(eq(getRecord()));
+        verify(transactionRecordService).findRecord(getRecord());
     }
 
 }
