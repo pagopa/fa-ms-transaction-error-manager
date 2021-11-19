@@ -14,4 +14,5 @@ public interface TransactionRecordDAO extends CrudJpaDAO<TransactionRecord, Stri
 
     List<TransactionRecord> findByToResubmit(Boolean toResubmit);
 
+
 }

@@ -10,7 +10,7 @@
     </parent>
 
     <groupId>it.gov.pagopa.fa.ms.transaction-error-manager</groupId>
-    <artifactId>rtd-ms-transaction-error-manager-app</artifactId>
+    <artifactId>fa-ms-transaction-error-manager-app</artifactId>
     <version>1.0-SNAPSHOT</version>
 
     <dependencies>
