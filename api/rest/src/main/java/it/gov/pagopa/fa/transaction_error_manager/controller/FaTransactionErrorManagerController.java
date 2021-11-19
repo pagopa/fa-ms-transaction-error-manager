@@ -15,7 +15,7 @@ import java.util.List;
 /**
  * Controller to expose MicroService
  */
-@Api(tags = "Bonus Pagamenti Digitali payment-instrument Controller")
+@Api(tags = "Fatturazione Automatica transaction-error-manager Controller")
 @RequestMapping("/fa/transaction-error-manager")
 public interface FaTransactionErrorManagerController {
 
