@@ -13,7 +13,6 @@ import it.gov.pagopa.fa.transaction_error_manager.service.TransactionRecordServi
 import it.gov.pagopa.fa.transaction_error_manager.service.mapper.TransactionMapper;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.kafka.common.header.internals.RecordHeaders;
-import org.jetbrains.annotations.NotNull;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.config.BeanDefinition;
 import org.springframework.context.annotation.Scope;
@@ -140,7 +139,6 @@ class SubmitFlaggedRecordsCommandImpl extends BaseCommand<Boolean> implements Su
         this.asyncUtils = asyncUtils;
     }
 
-    @NotNull
     private RecordHeaders buildHeaders(TransactionRecord transactionRecord) {
         String requestId = buildRequestId(transactionRecord);
         RecordHeaders recordHeaders = new RecordHeaders();
@@ -159,7 +157,6 @@ class SubmitFlaggedRecordsCommandImpl extends BaseCommand<Boolean> implements Su
         return recordHeaders;
     }
 
-    @NotNull
     private String buildRequestId(TransactionRecord transactionRecord) {
         return transactionRecord.getOriginRequestId() == null ?
                 "Resubmitted" :

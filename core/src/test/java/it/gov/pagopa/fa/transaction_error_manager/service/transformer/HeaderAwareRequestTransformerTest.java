@@ -57,7 +57,7 @@ public class HeaderAwareRequestTransformerTest {
         byte[] payload = "payload".getBytes(StandardCharsets.UTF_8);
 
         EventRequest<byte[]> result = byteArrayTransformer.transform(payload);
-        
+
         assertNotNull(result);
         assertNotNull(result.getPayload());
         assertNotNull(result.getHeaders());
