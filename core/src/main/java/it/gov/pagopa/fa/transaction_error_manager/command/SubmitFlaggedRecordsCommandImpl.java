@@ -11,7 +11,6 @@ import it.gov.pagopa.fa.transaction_error_manager.service.FaTransactionPublisher
 import it.gov.pagopa.fa.transaction_error_manager.service.RtdTransactionPublisherService;
 import it.gov.pagopa.fa.transaction_error_manager.service.TransactionRecordService;
 import it.gov.pagopa.fa.transaction_error_manager.service.mapper.TransactionMapper;
-import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.kafka.common.header.internals.RecordHeaders;
 import org.jetbrains.annotations.NotNull;
@@ -30,13 +29,13 @@ import java.util.function.Consumer;
  * Base implementation of the SaveTransactionCommandInterface, extending Meda BaseCommand class, the command
  * represents the class interacted with at api level, hiding the multiple calls to the integration connectors
  */
-
 @Component
 @Scope(BeanDefinition.SCOPE_PROTOTYPE)
 @Slf4j
 class SubmitFlaggedRecordsCommandImpl extends BaseCommand<Boolean> implements SubmitFlaggedRecordsCommand {
 
-    public static final String DATE_TIME_PATTERN = "dd/MM/yyyy hh:mm:ss.SSSXXXXX";
+    private static final String DATE_TIME_PATTERN = "dd/MM/yyyy hh:mm:ss.SSSXXXXX";
+
     private TransactionRecordService transactionRecordService;
     private RtdTransactionPublisherService rtdTransactionPublisherService;
     private FaTransactionPublisherService faTransactionPublisherService;
@@ -66,7 +65,6 @@ class SubmitFlaggedRecordsCommandImpl extends BaseCommand<Boolean> implements Su
      * @return boolean to indicate if the command is successfully executed
      */
 
-    @SneakyThrows
     @Override
     public Boolean doExecute() {
 
@@ -186,13 +184,13 @@ class SubmitFlaggedRecordsCommandImpl extends BaseCommand<Boolean> implements Su
     }
 
     @Autowired
-    public void setBpdTransactionPublisherService(
+    public void setFaTransactionPublisherService(
             FaTransactionPublisherService faTransactionPublisherService) {
         this.faTransactionPublisherService = faTransactionPublisherService;
     }
 
     @Autowired
-    public void setBpdCashbackTransactionPublisherService(
+    public void setFaCashbackTransactionPublisherService(
             FaCashbackTransactionPublisherService faCashbackTransactionPublisherService) {
         this.faCashbackTransactionPublisherService = faCashbackTransactionPublisherService;
     }

@@ -14,69 +14,92 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
-import org.mockito.BDDMockito;
 import org.mockito.Mock;
-import org.mockito.Mockito;
 import org.mockito.Spy;
 
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
-import java.util.Collections;
 
+import static java.util.Collections.singletonList;
+import static org.junit.Assert.*;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.*;
 import static org.mockito.MockitoAnnotations.initMocks;
 
 public class SubmitFlaggedRecordsCommandImplTest extends BaseTest {
 
-    @Rule
-    public ExpectedException exceptionRule = ExpectedException.none();
-    @Mock
-    TransactionRecordService transactionRecordService;
-    @Mock
-    RtdTransactionPublisherService rtdTransactionPublisherService;
-    @Mock
-    FaTransactionPublisherService faTransactionPublisherService;
-    @Mock
-    FaCashbackTransactionPublisherService faCashbackTransactionPublisherService;
-    @Spy
-    TransactionMapper transactionMapperSpy;
-    @Spy
-    AsyncUtils asyncUtilsSpy;
+    @Rule public ExpectedException exceptionRule = ExpectedException.none();
+    @Mock TransactionRecordService transactionRecordService;
+    @Mock RtdTransactionPublisherService rtdTransactionPublisherService;
+    @Mock FaTransactionPublisherService faTransactionPublisherService;
+    @Mock FaCashbackTransactionPublisherService faCashbackTransactionPublisherService;
+    @Spy  TransactionMapper transactionMapperSpy;
+    @Spy  AsyncUtils asyncUtilsSpy;
 
     @Before
     public void initTest() {
         initMocks(this);
-        Mockito.reset(
-                transactionRecordService,
-                rtdTransactionPublisherService,
-                faTransactionPublisherService,
-                transactionMapperSpy,
-                asyncUtilsSpy);
     }
 
     @Test
     public void TestExecute_OK_RTD() {
-        TransactionRecord transactionRecord = getSavedModel();
-        BDDMockito.doReturn(Collections.singletonList(transactionRecord)).when(transactionRecordService)
-                .findRecordsToResubmit();
-        SubmitFlaggedRecordsCommandImpl saveTransactionCommand = new SubmitFlaggedRecordsCommandImpl(
-                transactionRecordService,
-                rtdTransactionPublisherService,
-                faTransactionPublisherService,
-                faCashbackTransactionPublisherService,
-                transactionMapperSpy);
-        saveTransactionCommand.setAsyncUtils(asyncUtilsSpy);
+        SubmitFlaggedRecordsCommandImpl saveTransactionCommand = prepareTest("rtd-trx");
         Boolean executed = saveTransactionCommand.doExecute();
-        Assert.assertTrue(executed);
-        BDDMockito.verify(rtdTransactionPublisherService)
-                .publishRtdTransactionEvent(Mockito.eq(getRequestModel()), Mockito.any());
+        assertTrue(executed);
+        verify(rtdTransactionPublisherService).publishRtdTransactionEvent(eq(getRequestModel()), any());
+    }
+
+    @Test
+    public void TestExecute_OK_FA() {
+        SubmitFlaggedRecordsCommandImpl saveTransactionCommand = prepareTest(
+                "fa-trx", "originRequestId", "originListener");
+        Boolean executed = saveTransactionCommand.doExecute();
+        assertTrue(executed);
+        verify(faTransactionPublisherService).publishFaTransactionEvent(eq(getRequestModel()), any());
+    }
+
+    @Test
+    public void TestExecute_OK_FA_case2() {
+        SubmitFlaggedRecordsCommandImpl saveTransactionCommand = prepareTest(
+                "fa-trx", "originRequestId", "originiListener", "validationDate");
+        Boolean executed = saveTransactionCommand.doExecute();
+        assertTrue(executed);
+        verify(faTransactionPublisherService).publishFaTransactionEvent(eq(getRequestModel()), any());
     }
 
     @Test
     public void TestExecute_OK_BPD() {
+        SubmitFlaggedRecordsCommandImpl saveTransactionCommand = prepareTest("bpd-trx-cashback");
+        Boolean executed = saveTransactionCommand.doExecute();
+        assertTrue(executed);
+        verify(faCashbackTransactionPublisherService).publishFaCashbackTransactionEvent(eq(getRequestModel()), any());
+    }
+
+    @Test
+    public void TestExecute_OK_NotRecognized() {
         TransactionRecord transactionRecord = getSavedModel();
-        transactionRecord.setOriginTopic("fa-trx");
-        BDDMockito.doReturn(Collections.singletonList(transactionRecord)).when(transactionRecordService)
-                .findRecordsToResubmit();
+        transactionRecord.setOriginTopic("not_recognized_value");
+        doReturn(singletonList(transactionRecord)).when(transactionRecordService).findRecordsToResubmit();
+        SubmitFlaggedRecordsCommandImpl saveTransactionCommand = new SubmitFlaggedRecordsCommandImpl(
+                transactionRecordService,
+                rtdTransactionPublisherService,
+                faTransactionPublisherService,
+                faCashbackTransactionPublisherService,
+                transactionMapperSpy);
+        saveTransactionCommand.setTransactionRecordService(transactionRecordService);
+        saveTransactionCommand.setRtdTransactionPublisherService(rtdTransactionPublisherService);
+        saveTransactionCommand.setFaTransactionPublisherService(faTransactionPublisherService);
+        saveTransactionCommand.setFaCashbackTransactionPublisherService(faCashbackTransactionPublisherService);
+        saveTransactionCommand.setTransactionMapper(transactionMapperSpy);
+        saveTransactionCommand.setAsyncUtils(asyncUtilsSpy);
+        Boolean executed = saveTransactionCommand.doExecute();
+        assertTrue(executed);
+        verifyNoPublish();
+    }
+
+    @Test
+    public void throw_exception_when_service_error(){
         SubmitFlaggedRecordsCommandImpl saveTransactionCommand = new SubmitFlaggedRecordsCommandImpl(
                 transactionRecordService,
                 rtdTransactionPublisherService,
@@ -84,10 +107,44 @@ public class SubmitFlaggedRecordsCommandImplTest extends BaseTest {
                 faCashbackTransactionPublisherService,
                 transactionMapperSpy);
         saveTransactionCommand.setAsyncUtils(asyncUtilsSpy);
-        Boolean executed = saveTransactionCommand.doExecute();
-        Assert.assertTrue(executed);
-        BDDMockito.verify(faTransactionPublisherService)
-                .publishFaTransactionEvent(Mockito.eq(getRequestModel()), Mockito.any());
+        doThrow(new RuntimeException("")).when(transactionRecordService).findRecordsToResubmit();
+        try{
+            saveTransactionCommand.doExecute();
+            fail("Expected an exception here");
+        } catch (Throwable t){
+            assertEquals(RuntimeException.class, t.getClass());
+            verifyNoPublish();
+        }
+    }
+
+    @Test
+    public void throw_exception_when_handle_transaction_error(){
+        SubmitFlaggedRecordsCommandImpl saveTransactionCommand = prepareTest("fa-trx");
+        doThrow(new RuntimeException("")).when(transactionRecordService).saveTransactionRecord(any());
+        try{
+            saveTransactionCommand.doExecute();
+            fail("Expected an exception here");
+        } catch (Throwable t){
+            assertEquals(RuntimeException.class, t.getClass());
+            verify(faTransactionPublisherService).publishFaTransactionEvent(eq(getRequestModel()), any());
+        }
+    }
+
+    private SubmitFlaggedRecordsCommandImpl prepareTest(final String... args) {
+        TransactionRecord transactionRecord = getSavedModel();
+        transactionRecord.setOriginTopic(args[0]);
+        transactionRecord.setOriginRequestId(args.length > 1 ? args[1] : null);
+        transactionRecord.setOriginListener(args.length > 2 ? args[2] : null);
+        transactionRecord.setCustomerValidationDate(args.length > 3 ? OffsetDateTime.now() : null);
+        doReturn(singletonList(transactionRecord)).when(transactionRecordService).findRecordsToResubmit();
+        SubmitFlaggedRecordsCommandImpl saveTransactionCommand = new SubmitFlaggedRecordsCommandImpl(
+                transactionRecordService,
+                rtdTransactionPublisherService,
+                faTransactionPublisherService,
+                faCashbackTransactionPublisherService,
+                transactionMapperSpy);
+        saveTransactionCommand.setAsyncUtils(asyncUtilsSpy);
+        return saveTransactionCommand;
     }
 
     protected Transaction getRequestModel() {
@@ -139,5 +196,13 @@ public class SubmitFlaggedRecordsCommandImplTest extends BaseTest {
                 .build();
     }
 
+    private void verifyNoPublish() {
+        verify(faTransactionPublisherService, never())
+                .publishFaTransactionEvent(eq(getRequestModel()), any());
+        verify(faCashbackTransactionPublisherService, never())
+                .publishFaCashbackTransactionEvent(eq(getRequestModel()), any());
+        verify(rtdTransactionPublisherService, never())
+                .publishRtdTransactionEvent(eq(getRequestModel()), any());
+    }
 
 }
