@@ -45,7 +45,7 @@ class SaveTransactionRecordCommandImpl extends BaseCommand<Boolean> implements S
             TransactionCommandModel transactionCommandModel,
             TransactionRecordService transactionRecordService,
             TransactionMapper transactionMapper) {
-        this.transactionCommandModel = transactionCommandModel;
+        this(transactionCommandModel);
         this.transactionRecordService = transactionRecordService;
         this.transactionMapper = transactionMapper;
     }

@@ -11,7 +11,6 @@ import it.gov.pagopa.fa.transaction_error_manager.service.FaTransactionPublisher
 import it.gov.pagopa.fa.transaction_error_manager.service.RtdTransactionPublisherService;
 import it.gov.pagopa.fa.transaction_error_manager.service.TransactionRecordService;
 import it.gov.pagopa.fa.transaction_error_manager.service.mapper.TransactionMapper;
-import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.kafka.common.header.internals.RecordHeaders;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -23,26 +22,26 @@ import java.time.OffsetDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
+import java.util.function.Consumer;
 
 /**
  * Base implementation of the SaveTransactionCommandInterface, extending Meda BaseCommand class, the command
  * represents the class interacted with at api level, hiding the multiple calls to the integration connectors
  */
-
 @Component
 @Scope(BeanDefinition.SCOPE_PROTOTYPE)
 @Slf4j
 class SubmitFlaggedRecordsCommandImpl extends BaseCommand<Boolean> implements SubmitFlaggedRecordsCommand {
+
+    private static final String DATE_TIME_PATTERN = "dd/MM/yyyy hh:mm:ss.SSSXXXXX";
 
     private TransactionRecordService transactionRecordService;
     private RtdTransactionPublisherService rtdTransactionPublisherService;
     private FaTransactionPublisherService faTransactionPublisherService;
     private FaCashbackTransactionPublisherService faCashbackTransactionPublisherService;
     private TransactionMapper transactionMapper;
-
-
-    public SubmitFlaggedRecordsCommandImpl() {
-    }
+    private final Consumer<TransactionRecord> handleTransactionRecordAsynchronously =
+            t -> callAsyncService(() -> handleTransactionRecord(t) );
 
     public SubmitFlaggedRecordsCommandImpl(
             TransactionRecordService transactionRecordService,
@@ -65,73 +64,18 @@ class SubmitFlaggedRecordsCommandImpl extends BaseCommand<Boolean> implements Su
      * @return boolean to indicate if the command is successfully executed
      */
 
-    @SneakyThrows
     @Override
     public Boolean doExecute() {
 
         this.callAsyncService(() -> {
             try {
 
-                DateTimeFormatter dateTimeFormatter = DateTimeFormatter.ofPattern("dd/MM/yyyy hh:mm:ss.SSSXXXXX");
+                DateTimeFormatter dateTimeFormatter = DateTimeFormatter.ofPattern(DATE_TIME_PATTERN);
                 OffsetDateTime execStart = OffsetDateTime.now();
 
                 List<TransactionRecord> transactionRecordList = transactionRecordService.findRecordsToResubmit();
-                for (TransactionRecord transactionRecord : transactionRecordList) {
-                    this.callAsyncService(() -> {
 
-                        try {
-
-                            Transaction transaction = transactionMapper.mapTransaction(transactionRecord);
-                            RecordHeaders recordHeaders = new RecordHeaders();
-                            String requestId = transactionRecord.getOriginRequestId() == null ?
-                                    "Resubmitted" :
-                                    "Resubmitted;".concat(transactionRecord.getOriginRequestId());
-                            recordHeaders.add(TransactionRecordConstants.REQUEST_ID_HEADER, requestId.getBytes());
-                            BaseContextHolder.getApplicationContext().setRequestId(requestId);
-                            recordHeaders.add(TransactionRecordConstants.USER_ID_HEADER,
-                                    "rtd-ms-transaction-error-manager".getBytes());
-                            recordHeaders.add(TransactionRecordConstants.LISTENER_HEADER,
-                                    transactionRecord.getOriginListener() == null ?
-                                            null :
-                                            transactionRecord.getOriginListener().getBytes());
-                            recordHeaders.add(TransactionRecordConstants.CUSTOMER_VALIDATION_DATETIME_HEADER,
-                                    transactionRecord.getCustomerValidationDate() == null ?
-                                            null :
-                                            transactionRecord.getCustomerValidationDate().toString().getBytes());
-
-                            switch (transactionRecord.getOriginTopic()) {
-                                case "fa-trx":
-                                    faTransactionPublisherService.publishFaTransactionEvent(transaction, recordHeaders);
-                                    break;
-                                case "rtd-trx":
-                                    rtdTransactionPublisherService.publishRtdTransactionEvent(transaction, recordHeaders);
-                                    break;
-                                case "bpd-trx-cashback":
-                                    faCashbackTransactionPublisherService
-                                            .publishFaCashbackTransactionEvent(transaction, recordHeaders);
-                                    break;
-                            }
-
-                            transactionRecord.setToResubmit(false);
-                            transactionRecord.setLastResubmitDate(OffsetDateTime.now());
-                            transactionRecordService.saveTransactionRecord(transactionRecord);
-
-                            return true;
-
-                        } catch (Exception e) {
-                            logger.error("Error occurred while attempting to submit flagged record: {}, {}, {}, {}, {}",
-                                    transactionRecord.getAcquirerCode(),
-                                    transactionRecord.getIdTrxAcquirer(),
-                                    transactionRecord.getTrxDate(),
-                                    transactionRecord.getAcquirerId(),
-                                    transactionRecord.getOperationType());
-                            logger.error(e.getMessage(), e);
-                            throw e;
-                        }
-
-                    });
-
-                }
+                transactionRecordList.forEach( this.handleTransactionRecordAsynchronously );
 
                 OffsetDateTime endExec = OffsetDateTime.now();
                 log.info("Executed SubmitFlaggedRecordsCommand for transaction" +
@@ -144,13 +88,79 @@ class SubmitFlaggedRecordsCommandImpl extends BaseCommand<Boolean> implements Su
 
             } catch (Exception e) {
                 logger.error("Error occurred while attempting to submit flagged records");
-                logger.error(e.getMessage(), e);
                 throw e;
             }
 
         });
 
         return true;
+    }
+
+    private boolean handleTransactionRecord(TransactionRecord transactionRecord) {
+        try {
+
+            final Transaction transaction = transactionMapper.mapTransaction(transactionRecord);
+            final RecordHeaders recordHeaders = buildHeaders(transactionRecord);
+
+            switch (transactionRecord.getOriginTopic()) {
+                case "fa-trx":
+                    faTransactionPublisherService.publishFaTransactionEvent(transaction, recordHeaders);
+                    break;
+                case "rtd-trx":
+                    rtdTransactionPublisherService.publishRtdTransactionEvent(transaction, recordHeaders);
+                    break;
+                case "bpd-trx-cashback":
+                    faCashbackTransactionPublisherService
+                            .publishFaCashbackTransactionEvent(transaction, recordHeaders);
+                    break;
+                default:
+                    log.warn("Origin topic {} not recognized!", transactionRecord.getOriginTopic());
+                    break;
+            }
+
+            transactionRecord.setToResubmit(false);
+            transactionRecord.setLastResubmitDate(OffsetDateTime.now());
+            transactionRecordService.saveTransactionRecord(transactionRecord);
+
+            return true;
+
+        } catch (Exception e) {
+            logger.error("Error occurred while attempting to submit flagged record: {}, {}, {}, {}, {}",
+                    transactionRecord.getAcquirerCode(),
+                    transactionRecord.getIdTrxAcquirer(),
+                    transactionRecord.getTrxDate(),
+                    transactionRecord.getAcquirerId(),
+                    transactionRecord.getOperationType());
+            throw e;
+        }
+    }
+
+    protected void setAsyncUtils(AsyncUtils asyncUtils) {
+        this.asyncUtils = asyncUtils;
+    }
+
+    private RecordHeaders buildHeaders(TransactionRecord transactionRecord) {
+        String requestId = buildRequestId(transactionRecord);
+        RecordHeaders recordHeaders = new RecordHeaders();
+        recordHeaders.add(TransactionRecordConstants.REQUEST_ID_HEADER, requestId.getBytes());
+        BaseContextHolder.getApplicationContext().setRequestId(requestId);
+        recordHeaders.add(TransactionRecordConstants.USER_ID_HEADER,
+                "rtd-ms-transaction-error-manager".getBytes());
+        recordHeaders.add(TransactionRecordConstants.LISTENER_HEADER,
+                transactionRecord.getOriginListener() == null ?
+                        null :
+                        transactionRecord.getOriginListener().getBytes());
+        recordHeaders.add(TransactionRecordConstants.CUSTOMER_VALIDATION_DATETIME_HEADER,
+                transactionRecord.getCustomerValidationDate() == null ?
+                        null :
+                        transactionRecord.getCustomerValidationDate().toString().getBytes());
+        return recordHeaders;
+    }
+
+    private String buildRequestId(TransactionRecord transactionRecord) {
+        return transactionRecord.getOriginRequestId() == null ?
+                "Resubmitted" :
+                "Resubmitted;".concat(transactionRecord.getOriginRequestId());
     }
 
     @Autowired
@@ -171,19 +181,15 @@ class SubmitFlaggedRecordsCommandImpl extends BaseCommand<Boolean> implements Su
     }
 
     @Autowired
-    public void setBpdTransactionPublisherService(
+    public void setFaTransactionPublisherService(
             FaTransactionPublisherService faTransactionPublisherService) {
         this.faTransactionPublisherService = faTransactionPublisherService;
     }
 
     @Autowired
-    public void setBpdCashbackTransactionPublisherService(
+    public void setFaCashbackTransactionPublisherService(
             FaCashbackTransactionPublisherService faCashbackTransactionPublisherService) {
         this.faCashbackTransactionPublisherService = faCashbackTransactionPublisherService;
-    }
-
-    protected void setAsyncUtils(AsyncUtils asyncUtils) {
-        this.asyncUtils = asyncUtils;
     }
 
 }

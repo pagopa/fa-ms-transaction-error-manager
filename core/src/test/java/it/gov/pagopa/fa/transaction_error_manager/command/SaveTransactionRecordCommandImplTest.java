@@ -9,35 +9,24 @@ import it.gov.pagopa.fa.transaction_error_manager.service.TransactionRecordServi
 import it.gov.pagopa.fa.transaction_error_manager.service.mapper.TransactionMapper;
 import org.apache.kafka.common.header.Headers;
 import org.apache.kafka.common.header.internals.RecordHeaders;
-import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
-import org.mockito.Mockito;
 import org.mockito.Spy;
 
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 
 import static org.junit.Assert.*;
-import static org.mockito.Mockito.doReturn;
-import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.*;
 
 public class SaveTransactionRecordCommandImplTest extends BaseTest {
 
-    @Rule
-    public ExpectedException exceptionRule = ExpectedException.none();
-    @Mock
-    TransactionRecordService transactionRecordService;
-    @Spy
-    TransactionMapper transactionMapperSpy;
-
-    @Before
-    public void initTest() {
-        Mockito.reset(transactionRecordService, transactionMapperSpy);
-    }
+    @Rule public ExpectedException exceptionRule = ExpectedException.none();
+    @Mock TransactionRecordService transactionRecordService;
+    @Spy  TransactionMapper transactionMapperSpy;
 
     @Test
     public void TestExecute_OK_VoidData() {
@@ -122,6 +111,37 @@ public class SaveTransactionRecordCommandImplTest extends BaseTest {
         assertEquals("bpd-trx-cashback", argument.getValue().getOriginTopic());
     }
 
+    @Test
+    public void TestExecute_OK_WTRecord_case2() {
+
+        Transaction transaction = getRequestModel();
+        TransactionRecord transactionRecord = getSavedModel();
+        Headers headers = new RecordHeaders();
+        headers.add(TransactionRecordConstants.EXCEPTION_HEADER, "test".getBytes());
+        headers.add(TransactionRecordConstants.LISTENER_HEADER,
+                "it.gov.pagopa.bpd.winning_transaction.listener.OnTransactionSaveRequestListener".getBytes());
+        headers.add(TransactionRecordConstants.REQUEST_ID_HEADER, "requestId".getBytes());
+        headers.add(TransactionRecordConstants.CUSTOMER_VALIDATION_DATETIME_HEADER, "2020-12-21T13:15:30+01:00".getBytes());
+
+        ArgumentCaptor<TransactionRecord> argument = ArgumentCaptor.forClass(TransactionRecord.class);
+        doReturn(transactionRecord).when(transactionRecordService)
+                .saveTransactionRecord(transactionRecord);
+
+        SaveTransactionRecordCommandImpl saveTransactionCommand = new SaveTransactionRecordCommandImpl(
+                TransactionCommandModel.builder().payload(transaction).headers(headers).build());
+        saveTransactionCommand.setTransactionMapper(transactionMapperSpy);
+        saveTransactionCommand.setTransactionRecordService(transactionRecordService);
+
+        Boolean executed = saveTransactionCommand.doExecute();
+        assertTrue(executed);
+        verify(transactionMapperSpy).mapTransactionRecord(transaction);
+        verify(transactionRecordService).saveTransactionRecord(argument.capture());
+        assertNotNull(argument.getValue().getRecordId());
+        assertEquals("test", argument.getValue().getExceptionMessage());
+        assertEquals(false, argument.getValue().getToResubmit());
+        assertEquals("bpd-trx-cashback", argument.getValue().getOriginTopic());
+    }
+
 
     @Test
     public void TestExecute_KO_Validation() {
@@ -136,7 +156,7 @@ public class SaveTransactionRecordCommandImplTest extends BaseTest {
                 transactionMapperSpy);
         exceptionRule.expect(AssertionError.class);
         saveTransactionCommand.doExecute();
-        Mockito.verifyZeroInteractions(transactionRecordService);
+        verifyZeroInteractions(transactionRecordService);
 
     }
 
@@ -152,7 +172,7 @@ public class SaveTransactionRecordCommandImplTest extends BaseTest {
                 transactionMapperSpy);
         exceptionRule.expect(NullPointerException.class);
         saveTransactionCommand.doExecute();
-        Mockito.verifyZeroInteractions(transactionRecordService);
+        verifyZeroInteractions(transactionRecordService);
 
     }
 

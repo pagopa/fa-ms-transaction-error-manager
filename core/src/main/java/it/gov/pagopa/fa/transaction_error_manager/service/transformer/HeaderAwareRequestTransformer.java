@@ -16,9 +16,9 @@ import java.nio.charset.StandardCharsets;
 
 @Service
 @Primary
-public class HeaderAwareRequestTransformer<INPUT> implements IEventRequestTransformer<INPUT, INPUT> {
+public class HeaderAwareRequestTransformer<I> implements IEventRequestTransformer<I, I> {
     private static final Logger logger = LoggerUtils.getLogger(
-            eu.sia.meda.event.transformer.SimpleEventRequestTransformer.class);
+            it.gov.pagopa.fa.transaction_error_manager.service.transformer.HeaderAwareRequestTransformer.class);
     private final ObjectMapper objectMapper;
 
     @Autowired
@@ -26,9 +26,9 @@ public class HeaderAwareRequestTransformer<INPUT> implements IEventRequestTransf
         this.objectMapper = objectMapper;
     }
 
-    public EventRequest<INPUT> transform(INPUT payload, Object... args) {
+    public EventRequest<I> transform(I payload, Object... args) {
         try {
-            EventRequest<INPUT> request = new EventRequest<>();
+            EventRequest<I> request = new EventRequest<>();
             if (payload instanceof byte[]) {
                 request.setPayload((byte[]) payload);
             } else {
@@ -39,8 +39,9 @@ public class HeaderAwareRequestTransformer<INPUT> implements IEventRequestTransf
             request.setHeaders(headers);
 
             return request;
-        } catch (JsonProcessingException var4) {
-            throw new IllegalStateException("Cannot serialize payload!", var4);
+        } catch (JsonProcessingException jpe) {
+            logger.error("Something went wrong trying to serialize payload");
+            throw new IllegalStateException("Cannot serialize payload!", jpe);
         }
     }
 }
