@@ -10,9 +10,13 @@ import org.junit.rules.ExpectedException;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 
+import java.math.BigDecimal;
+import java.time.OffsetDateTime;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.mockito.Mockito.*;
 
@@ -28,6 +32,16 @@ public class TransactionRecordServiceImplTest extends BaseTest {
     public void initTest() {
         reset(transactionRecordDAOMock);
         transactionRecordService = new TransactionRecordServiceImpl(transactionRecordDAOMock);
+    }
+
+    private TransactionRecord getRecord(){
+        return TransactionRecord.builder()
+                .amount(BigDecimal.valueOf(1))
+                .bin("bin")
+                .idTrxIssuer("idTrxIssuer")
+                .terminalId("terminalId")
+                .trxDate(OffsetDateTime.parse("2020-04-09T16:22:45.304Z"))
+                .build();
     }
 
     @Test
@@ -71,4 +85,35 @@ public class TransactionRecordServiceImplTest extends BaseTest {
         verify(transactionRecordDAOMock).save(Mockito.any());
     }
 
+    @Test
+    public void findRecordOK(){
+        List result = new ArrayList();
+        result.add(getRecord());
+
+        doReturn(result).when(transactionRecordDAOMock)
+                .findTransaction(getRecord().getTrxDate(),
+                        getRecord().getIdTrxIssuer(),
+                        getRecord().getAmount(),
+                        getRecord().getBin(),
+                        getRecord().getTerminalId());
+
+        List<TransactionRecord> find = transactionRecordService.findRecord(getRecord());
+        verify(transactionRecordDAOMock).findTransaction(any(),any(),any(),any(),any());
+    }
+
+    @Test
+    public void findRecordKO(){
+
+        doReturn(null).when(transactionRecordDAOMock)
+                .findTransaction(getRecord().getTrxDate(),
+                        getRecord().getIdTrxIssuer(),
+                        getRecord().getAmount(),
+                        getRecord().getBin(),
+                        getRecord().getTerminalId());
+
+        List find = transactionRecordService.findRecord(getRecord());
+
+        verify(transactionRecordDAOMock).findTransaction(any(),any(),any(),any(),any());
+        assertEquals(find,null);
+    }
 }
