@@ -39,9 +39,9 @@ public class HeaderAwareRequestTransformer<I> implements IEventRequestTransforme
             request.setHeaders(headers);
 
             return request;
-        } catch (JsonProcessingException var4) {
+        } catch (JsonProcessingException jpe) {
             logger.error("Something went wrong trying to serialize payload");
-            throw new IllegalStateException("Cannot serialize payload!", var4);
+            throw new IllegalStateException("Cannot serialize payload!", jpe);
         }
     }
 }
