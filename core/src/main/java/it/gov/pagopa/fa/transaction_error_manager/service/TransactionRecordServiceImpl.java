@@ -31,4 +31,9 @@ class TransactionRecordServiceImpl extends BaseService implements TransactionRec
         return transactionRecordDAO.findByToResubmit(true);
     }
 
+    @Override
+    public List<TransactionRecord> findRecord(TransactionRecord input) {
+        return transactionRecordDAO.findTransaction(input.getTrxDate(), input.getIdTrxIssuer(), input.getAmount(), input.getBin(), input.getTerminalId());
+    }
+
 }

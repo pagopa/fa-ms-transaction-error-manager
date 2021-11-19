@@ -20,14 +20,20 @@ public class TransactionRecordConstants {
     static {
         originListenerToTopic = new HashMap<>();
         originListenerToTopic.put(
-                "it.gov.pagopa.bpd.payment_instrument.listener.OnTransactionFilterRequestListener",
+                "it.gov.pagopa.fa.transaction.listener.OnTransactionValidateRequestListener",
                 "rtd-trx");
         originListenerToTopic.put(
-                "it.gov.pagopa.fa.point_processor.listener.OnTransactionProcessRequestListener",
+                "it.gov.pagopa.fa.transaction.listener.OnTransactionProcessRequestListener",
                 "fa-trx");
         originListenerToTopic.put(
-                "it.gov.pagopa.bpd.winning_transaction.listener.OnTransactionSaveRequestListener",
-                "bpd-trx-cashback");
+                "it.gov.pagopa.fa.payment_instrument.listener.OnTransactionFilterRequestListener",
+                "fa-trx-payment-instrument");
+        originListenerToTopic.put(
+                "it.gov.pagopa.fa.merchant.listener.OnTransactionFilterRequestListener",
+                "fa-trx-merchant");
+        originListenerToTopic.put(
+                "it.gov.pagopa.fa.customer.listener.OnTransactionFilterRequestListener",
+                "fa-trx-customer");
     }
 
 }

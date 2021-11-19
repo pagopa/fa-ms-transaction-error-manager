@@ -1,26 +1,26 @@
 package it.gov.pagopa.fa.transaction_error_manager.model;
 
-import it.gov.pagopa.bpd.common.connector.jpa.model.BaseEntity;
-import lombok.*;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 import org.springframework.format.annotation.DateTimeFormat;
 
-import javax.persistence.Entity;
-import javax.persistence.Table;
+import javax.validation.constraints.NotNull;
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 
-@Entity
 @Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-@EqualsAndHashCode(of = {"recordId"}, callSuper = false)
-@Table(name = "fa_transaction_record")
-public class TransactionRecordResource extends BaseEntity {
+public class TransactionRecordResource {
 
     String idTrxAcquirer;
+
     String acquirerCode;
 
+    @NotNull
     @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)
     OffsetDateTime trxDate;
 
@@ -30,10 +30,12 @@ public class TransactionRecordResource extends BaseEntity {
 
     String circuitType;
 
+    @NotNull
     String idTrxIssuer;
 
     String correlationId;
 
+    @NotNull
     BigDecimal amount;
 
     String amountCurrency;
@@ -42,21 +44,17 @@ public class TransactionRecordResource extends BaseEntity {
 
     String mccDescription;
 
-    BigDecimal score;
-
-    Long awardPeriodId;
-
     String acquirerId;
 
     String merchantId;
 
+    @NotNull
     String bin;
 
+    @NotNull
     String terminalId;
 
     String fiscalCode;
-
-    OffsetDateTime customerValidationDate;
 
 }
 
