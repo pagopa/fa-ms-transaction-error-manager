@@ -30,6 +30,7 @@ import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 import java.util.Arrays;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
 
 import static org.mockito.ArgumentMatchers.*;
@@ -50,26 +51,14 @@ import static org.mockito.Mockito.*;
 public class OnTransactionErrorRequestListenerTest extends BaseEventListenerTest {
 
 
-    @SpyBean
-    ObjectMapper objectMapperSpy;
-    @SpyBean
-    OnTransactionErrorRequestListener onTransactionFilterRequestListenerSpy;
-    @SpyBean
-    SaveTransactionCommandModelFactory saveTransactionCommandModelFactorySpy;
-    @MockBean
-    SaveTransactionRecordCommand saveTransactionRecordCommandMock;
+    @SpyBean  ObjectMapper objectMapperSpy;
+    @SpyBean  OnTransactionErrorRequestListener onTransactionFilterRequestListenerSpy;
+    @SpyBean  SaveTransactionCommandModelFactory saveTransactionCommandModelFactorySpy;
+    @MockBean SaveTransactionRecordCommand saveTransactionRecordCommandMock;
+    @Autowired private ObjectMapper objectMapper;
+    @Autowired private KafkaTemplate<String, String> template;
     @Value("${listeners.eventConfigurations.items.OnTransactionErrorRequestListener.topic}")
     private String topic;
-    @Autowired
-    private ObjectMapper objectMapper;
-    @Autowired
-    private KafkaTemplate<String, String> template;
-    @Autowired
-    private EmbeddedKafkaBroker kafkaBroker;
-    @Value("${spring.kafka.bootstrap-servers}")
-    private String bootstrapServers;
-    @Value("${spring.cloud.stream.kafka.binder.zkNodes}")
-    private String zkNodes;
 
     @BeforeClass
     public static void setErrorLogging() {
@@ -78,13 +67,23 @@ public class OnTransactionErrorRequestListenerTest extends BaseEventListenerTest
 
     @Before
     public void setUp() throws Exception {
+        doReturn(true).when(saveTransactionRecordCommandMock).execute();
+    }
 
-        Mockito.reset(
-                onTransactionFilterRequestListenerSpy,
-                saveTransactionCommandModelFactorySpy,
-                saveTransactionRecordCommandMock);
-        Mockito.doReturn(true).when(saveTransactionRecordCommandMock).execute();
+    @Test
+    public void exceptionTest() throws Exception {
+        given(saveTransactionRecordCommandMock.execute()).willThrow(new Exception());
+        prepareKOTest();
+        verify(objectMapperSpy, atLeastOnce()).readValue(anyString(), eq(Transaction.class));
+    }
 
+
+    @Test
+    public void exceptionPayloadNullTest() throws Exception {
+        given(saveTransactionRecordCommandMock.execute()).willThrow(new Exception());
+        doReturn(null).when(saveTransactionCommandModelFactorySpy).createModel(any());
+        prepareKOTest();
+        verify(objectMapperSpy, never()).readValue(anyString(), eq(Transaction.class));
     }
 
     @Override
@@ -127,22 +126,10 @@ public class OnTransactionErrorRequestListenerTest extends BaseEventListenerTest
         }
     }
 
-    @Test
-    public void exceptionTest() throws Exception {
-        given(saveTransactionRecordCommandMock.execute()).willThrow(new Exception());
-        prepareKOTest();
-        verify(objectMapperSpy, atLeastOnce()).readValue(anyString(), eq(Transaction.class));
+    @Override
+    protected ErrorPublisherService getErrorPublisherService() {
+        return null;
     }
-
-
-    @Test
-    public void exceptionPayloadNullTest() throws Exception {
-        given(saveTransactionRecordCommandMock.execute()).willThrow(new Exception());
-        doReturn(null).when(saveTransactionCommandModelFactorySpy).createModel(any());
-        prepareKOTest();
-        verify(objectMapperSpy, never()).readValue(anyString(), eq(Transaction.class));
-    }
-
 
     /**
      * Wraps common code for the expeptions test.
@@ -151,7 +138,7 @@ public class OnTransactionErrorRequestListenerTest extends BaseEventListenerTest
      * @throws JsonProcessingException
      */
     private void prepareKOTest() throws Exception {
-        Thread.sleep(2000L);
+        TimeUnit.SECONDS.sleep(2);
         List<String> jsons = Arrays.asList(this.objectMapper.writeValueAsString(this.getRequestObject()));
         List<ProducerRecord<String, String>> records = Arrays.asList(
                 new ProducerRecord(this.getTopic(), (Integer) null, (Object) null, jsons.get(0), null),
@@ -160,14 +147,8 @@ public class OnTransactionErrorRequestListenerTest extends BaseEventListenerTest
         Stream<ProducerRecord<String, String>> producerRecordStream = records.parallelStream();
         KafkaTemplate kafkaTemplate = this.template;
         producerRecordStream.forEach(kafkaTemplate::send);
-        Thread.sleep(this.getSleepMillis());
-        verify(saveTransactionCommandModelFactorySpy, atLeastOnce()).createModel(any());
-        verify(saveTransactionRecordCommandMock, atLeastOnce()).execute();
-    }
-
-    @Override
-    protected ErrorPublisherService getErrorPublisherService() {
-        return null;
+        verify(saveTransactionCommandModelFactorySpy, after(getSleepMillis()).atLeastOnce()).createModel(any());
+        verify(saveTransactionRecordCommandMock, after(getSleepMillis()).atLeastOnce()).execute();
     }
 
 }

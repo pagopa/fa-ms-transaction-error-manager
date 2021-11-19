@@ -14,6 +14,7 @@ import java.util.Collections;
 import java.util.List;
 
 import static org.junit.Assert.assertNotNull;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
 public class TransactionRecordServiceImplTest extends BaseTest {
@@ -42,10 +43,7 @@ public class TransactionRecordServiceImplTest extends BaseTest {
 
     @Test
     public void getList_KO() {
-        when(transactionRecordDAOMock.findByToResubmit(Mockito.eq(true))).thenAnswer(
-                invocation -> {
-                    throw new Exception();
-                });
+        when(transactionRecordDAOMock.findByToResubmit(true)).thenThrow(new RuntimeException(""));
         expectedException.expect(Exception.class);
         transactionRecordService.findRecordsToResubmit();
         verify(transactionRecordDAOMock).findByToResubmit(true);
