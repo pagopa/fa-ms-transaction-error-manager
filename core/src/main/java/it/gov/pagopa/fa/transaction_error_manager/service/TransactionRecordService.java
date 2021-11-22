@@ -13,4 +13,6 @@ public interface TransactionRecordService {
 
     List<TransactionRecord> findRecordsToResubmit();
 
+    List<TransactionRecord> findRecord(TransactionRecord input);
+
 }
