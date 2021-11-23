@@ -65,6 +65,9 @@ class SaveTransactionRecordCommandImpl extends BaseCommand<Boolean> implements S
         Transaction transaction = transactionCommandModel.getPayload();
         Headers headers = transactionCommandModel.getHeaders();
 
+        logger.debug("Executing SaveTransactionRecordCommand for transaction: {}, {}, {}",
+                transaction.getMerchantId(), transaction.getAmount(), transaction.getTrxDate());
+
         try {
 
             DateTimeFormatter dateTimeFormatter = DateTimeFormatter.ofPattern("dd/MM/yyyy hh:mm:ss.SSSXXXXX");
