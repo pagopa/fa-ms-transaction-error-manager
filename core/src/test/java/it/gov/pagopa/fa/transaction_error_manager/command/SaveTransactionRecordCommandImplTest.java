@@ -33,6 +33,7 @@ public class SaveTransactionRecordCommandImplTest extends BaseTest {
 
         Transaction transaction = getRequestModel();
         TransactionRecord transactionRecord = getSavedModel();
+        transactionRecord.setOriginTopic("rtd-trx");
         Headers headers = new RecordHeaders();
 
         ArgumentCaptor<TransactionRecord> argument = ArgumentCaptor.forClass(TransactionRecord.class);
@@ -79,7 +80,6 @@ public class SaveTransactionRecordCommandImplTest extends BaseTest {
         assertNotNull(argument.getValue().getRecordId());
         assertEquals("test", argument.getValue().getExceptionMessage());
         assertEquals(false, argument.getValue().getToResubmit());
-        assertEquals("rtd-trx", argument.getValue().getOriginTopic());
     }
 
     @Test
@@ -87,6 +87,7 @@ public class SaveTransactionRecordCommandImplTest extends BaseTest {
 
         Transaction transaction = getRequestModel();
         TransactionRecord transactionRecord = getSavedModel();
+        transactionRecord.setOriginTopic("bpd-trx-cashback");
         Headers headers = new RecordHeaders();
         headers.add(TransactionRecordConstants.EXCEPTION_HEADER, "test".getBytes());
         headers.add(TransactionRecordConstants.LISTENER_HEADER,
@@ -108,7 +109,6 @@ public class SaveTransactionRecordCommandImplTest extends BaseTest {
         assertNotNull(argument.getValue().getRecordId());
         assertEquals("test", argument.getValue().getExceptionMessage());
         assertEquals(false, argument.getValue().getToResubmit());
-        assertEquals("bpd-trx-cashback", argument.getValue().getOriginTopic());
     }
 
     @Test
@@ -116,6 +116,7 @@ public class SaveTransactionRecordCommandImplTest extends BaseTest {
 
         Transaction transaction = getRequestModel();
         TransactionRecord transactionRecord = getSavedModel();
+        transactionRecord.setOriginTopic("bpd-trx-cashback");
         Headers headers = new RecordHeaders();
         headers.add(TransactionRecordConstants.EXCEPTION_HEADER, "test".getBytes());
         headers.add(TransactionRecordConstants.LISTENER_HEADER,
@@ -139,7 +140,6 @@ public class SaveTransactionRecordCommandImplTest extends BaseTest {
         assertNotNull(argument.getValue().getRecordId());
         assertEquals("test", argument.getValue().getExceptionMessage());
         assertEquals(false, argument.getValue().getToResubmit());
-        assertEquals("bpd-trx-cashback", argument.getValue().getOriginTopic());
     }
 
 
