@@ -23,7 +23,6 @@ import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.boot.test.mock.mockito.SpyBean;
 import org.springframework.context.annotation.Import;
 import org.springframework.kafka.core.KafkaTemplate;
-import org.springframework.kafka.test.EmbeddedKafkaBroker;
 import org.springframework.test.context.TestPropertySource;
 
 import java.math.BigDecimal;
@@ -84,6 +83,13 @@ public class OnTransactionErrorRequestListenerTest extends BaseEventListenerTest
         doReturn(null).when(saveTransactionCommandModelFactorySpy).createModel(any());
         prepareKOTest();
         verify(objectMapperSpy, never()).readValue(anyString(), eq(Transaction.class));
+    }
+
+    @Test
+    public void exceptionPayloadNotNullTest() throws Exception {
+        given(saveTransactionRecordCommandMock.execute()).willThrow(new Exception());
+        prepareKOTest();
+        verify(objectMapperSpy,atLeastOnce()).readValue(anyString(), eq(Transaction.class));
     }
 
     @Override
