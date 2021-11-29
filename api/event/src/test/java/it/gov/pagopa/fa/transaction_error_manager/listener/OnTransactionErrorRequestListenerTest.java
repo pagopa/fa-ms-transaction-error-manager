@@ -87,7 +87,7 @@ public class OnTransactionErrorRequestListenerTest extends BaseEventListenerTest
 
     @Test
     public void exceptionPayloadNotNullTest() throws Exception {
-        given(saveTransactionRecordCommandMock.execute()).willThrow(new Exception());
+        doReturn(Boolean.FALSE).when(saveTransactionRecordCommandMock).execute();
         prepareKOTest();
         verify(objectMapperSpy,atLeastOnce()).readValue(anyString(), eq(Transaction.class));
     }
