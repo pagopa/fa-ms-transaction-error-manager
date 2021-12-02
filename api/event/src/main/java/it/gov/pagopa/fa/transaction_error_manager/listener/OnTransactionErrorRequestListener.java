@@ -61,7 +61,7 @@ public class OnTransactionErrorRequestListener extends BaseConsumerAwareEventLis
             SaveTransactionRecordCommand command = beanFactory.getBean(
                     SaveTransactionRecordCommand.class, transactionCommandModel);
 
-            if (!command.execute()) {
+            if (Boolean.FALSE.equals(command.execute())) {
                 throw new Exception("Failed to execute OnTransactionErrorRequestListener");
             }
 
@@ -75,9 +75,7 @@ public class OnTransactionErrorRequestListener extends BaseConsumerAwareEventLis
             try {
                 payloadString = new String(payload, StandardCharsets.UTF_8);
             } catch (Exception e2) {
-                if (logger.isErrorEnabled()) {
-                    logger.error("Something gone wrong converting the payload into String", e2);
-                }
+                logger.error("Something gone wrong converting the payload into String", e2);
             }
 
             if (transactionCommandModel != null && transactionCommandModel.getPayload() != null) {
@@ -88,9 +86,7 @@ public class OnTransactionErrorRequestListener extends BaseConsumerAwareEventLis
             } else if (payload != null) {
                 error = String.format("Something gone wrong during the evaluation of the payload: %s, %s",
                         payloadString, e.getMessage());
-                if (logger.isErrorEnabled()) {
-                    logger.error(error, e);
-                }
+                logger.error(error, e);
             }
 
 
