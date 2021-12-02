@@ -6,7 +6,9 @@ import eu.sia.meda.event.service.ErrorPublisherService;
 import eu.sia.meda.eventlistener.BaseEventListenerTest;
 import it.gov.pagopa.fa.transaction_error_manager.command.SaveTransactionRecordCommand;
 import it.gov.pagopa.fa.transaction_error_manager.listener.factory.SaveTransactionCommandModelFactory;
+import it.gov.pagopa.fa.transaction_error_manager.model.TransactionCommandModel;
 import it.gov.pagopa.fa.transaction_error_manager.publisher.model.Transaction;
+import lombok.SneakyThrows;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import org.junit.Assert;
 import org.junit.Before;
@@ -90,6 +92,15 @@ public class OnTransactionErrorRequestListenerTest extends BaseEventListenerTest
         doReturn(Boolean.FALSE).when(saveTransactionRecordCommandMock).execute();
         prepareKOTest();
         verify(objectMapperSpy,atLeastOnce()).readValue(anyString(), eq(Transaction.class));
+    }
+
+    @Test
+    @SneakyThrows
+    public void exceptionPayloadEmptyTest() throws Exception {
+        given(saveTransactionRecordCommandMock.execute()).willThrow(new Exception());
+        doReturn(new TransactionCommandModel()).when(saveTransactionCommandModelFactorySpy).createModel(any());
+        prepareKOTest();
+        verify(objectMapperSpy, never()).readValue(anyString(), eq(Transaction.class));
     }
 
     @Override
