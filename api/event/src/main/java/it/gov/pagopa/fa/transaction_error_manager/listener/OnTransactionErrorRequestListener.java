@@ -87,6 +87,7 @@ public class OnTransactionErrorRequestListener extends BaseConsumerAwareEventLis
                         payloadString, e.getMessage(), e);
             }
 
+
         }
     }
 
