@@ -1,0 +1,430 @@
+{
+  "info": {
+    "_postman_id": "a4662872-4425-4383-bb33-0a0b276ad050",
+    "name": "fa-ms-transaction-error-manager",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Preparation",
+      "item": [
+        {
+          "name": "000 - Set provider_id",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('000 - Set provider id', () => {\r",
+                  "    pm.response.to.have.status(200);\r",
+                  "    pm.collectionVariables.set(\"cv_provider_id\", pm.response.json().providerId);\r",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n    \"providerDesc\": \"provider Test Autom\",\r\n    \"endpointAddressDomain\": \"http://10.1.0.250:80/cstariobackendtest/fa/mock/poc\",\r\n    \"epCheckMerchant\": \"merchant/check/{vatNumber}\",\r\n    \"epRequestFA\": \"provider/invoice/request\",\r\n    \"epRequestStatusFA\": \"provider/invoice/response\"\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{environment_url}}/famsinvoiceprovider/fa/provider/",
+              "host": [
+                "{{environment_url}}"
+              ],
+              "path": [
+                "famsinvoiceprovider",
+                "fa",
+                "provider",
+                ""
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "001 - Set contract_id and shop_id",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('001 - Set contractId and shopId' , () => {\r",
+                  "    pm.response.to.have.status(200);\r",
+                  "    var jsonData = pm.response.json();\r",
+                  "    pm.expect(jsonData).to.be.not.empty;\r",
+                  "    pm.expect(jsonData.shops).to.be.not.empty;\r",
+                  "    pm.expect(jsonData.shops.length).to.be.equal(1);\r",
+                  "    //set environment variables\r",
+                  "    pm.collectionVariables.set('cv_contract_id', jsonData.shops[0].contractId);\r",
+                  "    pm.collectionVariables.set('cv_shop_id', jsonData.shops[0].shopId);\r",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n    \"vatNumber\": \"{{vat_number}}\",\r\n    \"companyName\": \"Company test\",\r\n    \"registerAuth\": \"{{register_auth}}\",\r\n    \"registerCode\": \"{{register_code}}\",\r\n    \"shops\": [\r\n        {\r\n            \"callId\": 1,\r\n            \"companyAddress\": \"Test address 1\",\r\n            \"companyName\": \"Test name 1\",\r\n            \"contactEmail\": \"test.1@test.test\",\r\n            \"contactName\": \"Contact name 1\",\r\n            \"contactSurname\": \"Contact surname 1\",\r\n            \"contactTel1\": \"+39420000000001\",\r\n            \"providerId\": {{cv_provider_id}}\r\n        }\r\n    ]\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{environment_url}}/famsmerchant/fa/merchant/{{vat_number}}",
+              "host": [
+                "{{environment_url}}"
+              ],
+              "path": [
+                "famsmerchant",
+                "fa",
+                "merchant",
+                "{{vat_number}}"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "002 - Set trx_date and initial_amount",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('001 - Set trx_date and initial_amount' , () => {\r",
+                  "    pm.response.to.have.status(200);\r",
+                  "    let now = new Date();    \r",
+                  "    pm.collectionVariables.set(\"cv_trx_date\", now.toISOString() );\r",
+                  "    let numberOfSeconds = now.getHours() * 60 * 60 + now.getMinutes() * 60 + now.getSeconds();\r",
+                  "    if(numberOfSeconds % 2 !== 0) numberOfSeconds = numberOfSeconds + 1; //always even\r",
+                  "    pm.collectionVariables.set(\"cv_initial_amount\", numberOfSeconds );\r",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "postman-echo.com/get",
+              "host": [
+                "postman-echo",
+                "com"
+              ],
+              "path": [
+                "get"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Execution",
+      "item": [
+        {
+          "name": "001 - transactionStatus",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "exec": [
+                  "pm.sendRequest({\r",
+                  "    url: pm.environment.get(\"url_mock\") + \"/transaction/rtd/send\",\r",
+                  "    method: \"POST\",\r",
+                  "    header: {\r",
+                  "        \"Accept\": \"application/json\",\r",
+                  "        \"Content-Type\": \"application/json\",\r",
+                  "    },\r",
+                  "    body: {\r",
+                  "        mode: \"raw\",\r",
+                  "        raw: JSON.stringify({\r",
+                  "                \"acquirerCode\": \"4964835\",\r",
+                  "                \"acquirerId\": \"650684654635\",\r",
+                  "                \"amount\": 1,\r",
+                  "                \"amountCurrency\": \"978\",\r",
+                  "                \"bin\": \"870965\",\r",
+                  "                \"circuitType\": \"02\",\r",
+                  "                \"correlationId\": \"6840974651304\",\r",
+                  "                \"hpan\": \"vw9865566e279292d7079ed995c46e8d12267a2a42baa50b439de4fn6a4z99k5\",\r",
+                  "                \"idTrxAcquirer\": \"1234567890234\",\r",
+                  "                \"idTrxIssuer\": \"68409489648604165\",\r",
+                  "                \"mcc\": \"7011\",\r",
+                  "                \"merchantId\": \"14\",\r",
+                  "                \"operationType\": \"00\",\r",
+                  "                \"terminalId\": \"40654165\",\r",
+                  "                \"trxDate\": \"2000-12-22T06:19:11.559Z\"\r",
+                  "        }),\r",
+                  "    }\r",
+                  "}, function (err, res) {\r",
+                  "    //response HTTP status must be 404\r",
+                  "    pm.expect(res).to.have.property('code', 200);\r",
+                  "    pm.expect(res).to.have.property('status', 'OK');\r",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('transactionStatus', () => {\r",
+                  "    //verify response HTTP status \r",
+                  "    pm.response.to.have.status(200);\r",
+                  "     //verify response \r",
+                  "    var jsonData = pm.response.json();\r",
+                  "    pm.expect(jsonData).to.be.not.empty;\r",
+                  "\r",
+                  "    var isAmountFound = jsonData.some( d => d.amount === 1);\r",
+                  "    var isBinFound = jsonData.some( d => d.bin === \"870965\"); \r",
+                  "    var isTerminaIdFound = jsonData.some( d => d.terminalId === \"40654165\"); \r",
+                  "    var isTrxIssuerFound = jsonData.some( d => d.idTrxIssuer === \"68409489648604165\"); \r",
+                  "\r",
+                  "    pm.expect(isAmountFound).to.be.true;\r",
+                  "    pm.expect(isBinFound).to.be.true;\r",
+                  "    pm.expect(isTerminaIdFound).to.be.true;\r",
+                  "    pm.expect(isTrxIssuerFound).to.be.true;\r",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "{{Api-key}}",
+                "value": "{{Api-keyValue}}",
+                "type": "default"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n  \"acquirerCode\": \"4964835\",\r\n  \"acquirerId\": \"650684654635\",\r\n  \"amount\": 1,\r\n  \"amountCurrency\": \"978\",\r\n  \"bin\": \"870965\",\r\n  \"circuitType\": \"02\",\r\n  \"correlationId\": \"6840974651304\",\r\n  \"fiscalCode\": \"string\",\r\n  \"hpan\": \"vw9865566e279292d7079ed995c46e8d12267a2a42baa50b439de4fn6a4z99k5\",\r\n  \"idTrxAcquirer\": \"1234567890234\",\r\n  \"idTrxIssuer\": \"68409489648604165\",\r\n  \"mcc\": \"7011\",\r\n  \"mccDescription\": \"string\",\r\n  \"merchantId\": \"14\",\r\n  \"operationType\": \"00\",\r\n  \"terminalId\": \"40654165\",\r\n  \"trxDate\": \"2000-12-22T06:19:11.559Z\"\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{environment_url}}/famstransactionerrormanager/fa/transaction-error-manager/transaction/status",
+              "host": [
+                "{{environment_url}}"
+              ],
+              "path": [
+                "famstransactionerrormanager",
+                "fa",
+                "transaction-error-manager",
+                "transaction",
+                "status"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "002 - transactionStatus Not Found",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "exec": [
+                  "//PRE-CONDITIONS\r",
+                  "eval(pm.environment.get('commonFunctions'));\r",
+                  "\r",
+                  "pm.request.headers.add({\r",
+                  "'key': pm.collectionVariables.get(\"Api-key\"),\r",
+                  "'value': pm.collectionVariables.get(\"Api-keyValue-io\")    \r",
+                  "});\r",
+                  "\r",
+                  "var commonHeader = {};\r",
+                  "commonHeader[pm.collectionVariables.get(\"Api-key\")] = pm.collectionVariables.get(\"Api-keyValue\");\r",
+                  "commonHeader['Content-Type'] = 'application/json';\r",
+                  "\r",
+                  "const bodies = [{\r",
+                  "    \"amount\": pm.collectionVariables.get('cv_initial_amount'),\r",
+                  "    \"bin\": \"870965\",\r",
+                  "    \"idTrxIssuer\": \"68409489648604165\",\r",
+                  "    \"merchantVatNumber\": pm.environment.get('vat_number'),\r",
+                  "    \"posType\": \"ASSERVED_POS\",\r",
+                  "    \"terminalId\": \"66571654\",\r",
+                  "    \"trxDate\": pm.collectionVariables.get('cv_trx_date'),\r",
+                  "    \"contractId\": pm.collectionVariables.get('cv_contract_id')\r",
+                  "    }, {\r",
+                  "    \"acquirerCode\": \"4964835\",\r",
+                  "    \"acquirerId\": \"650684654635\",\r",
+                  "    \"amount\": pm.collectionVariables.get('cv_initial_amount'),\r",
+                  "    \"amountCurrency\": \"978\",\r",
+                  "    \"bin\": \"870965\",\r",
+                  "    \"circuitType\": \"02\",\r",
+                  "    \"correlationId\": \"6840974651304\",\r",
+                  "    \"hpan\": pm.environment.get('hpanValid'),\r",
+                  "    \"idTrxAcquirer\": \"1234567890234\",\r",
+                  "    \"idTrxIssuer\": \"68409489648604165\",\r",
+                  "    \"mcc\": \"7011\",\r",
+                  "    \"merchantId\": pm.collectionVariables.get('cv_shop_id'),\r",
+                  "    \"operationType\": \"00\",\r",
+                  "    \"terminalId\": \"66571654\",\r",
+                  "    \"trxDate\": pm.collectionVariables.get('cv_trx_date')\r",
+                  "    }\r",
+                  "];\r",
+                  "\r",
+                  "const urls = [\r",
+                  "    pm.environment.get(\"url_mock\") + \"/cash/register/pos/transaction/sender\",\r",
+                  "    pm.environment.get(\"url_mock\") + \"/transaction/rtd/send\"\r",
+                  "];\r",
+                  "\r",
+                  "const configs = [\r",
+                  "    {\r",
+                  "        url: urls[0],\r",
+                  "        method: 'POST',\r",
+                  "        header: commonHeader,\r",
+                  "        body: {mode: 'raw', raw: JSON.stringify(bodies[0])}\r",
+                  "    }, {\r",
+                  "        url: urls[1],\r",
+                  "        method: 'POST',\r",
+                  "        header: commonHeader,\r",
+                  "        body: {mode: 'raw', raw: JSON.stringify(bodies[1])}\r",
+                  "    }\r",
+                  "];\r",
+                  "\r",
+                  "asyncSeries([\r",
+                  "    (cb) => {\r",
+                  "        pm.sendRequest(configs[0], (err, res) => {\r",
+                  "            console.log(res);\r",
+                  "            pm.expect(res).to.have.property('code', 200);\r",
+                  "            pm.expect(res).to.have.property('status', 'OK');\r",
+                  "            cb(err, res);\r",
+                  "        });\r",
+                  "    },\r",
+                  "    (cb) => {\r",
+                  "        pm.sendRequest(configs[1], (err, res) => {\r",
+                  "            console.log(res);\r",
+                  "            pm.expect(res).to.have.property('code', 200);\r",
+                  "            pm.expect(res).to.have.property('status', 'OK');\r",
+                  "            cb(err, res);\r",
+                  "        });\r",
+                  "    },\r",
+                  "], (err, res) => {\r",
+                  "    console.log('Pre request script successfully executed', err, res);\r",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('transactionStatus Not Found', () => {\r",
+                  "    //verify response HTTP status \r",
+                  "    pm.response.to.have.status(200);\r",
+                  "    let jsonData = pm.response.json();\r",
+                  "    pm.expect(jsonData).to.be.empty;\r",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n  \"acquirerCode\": \"4964835\",\r\n  \"acquirerId\": \"650684654635\",\r\n  \"amount\": {{cv_initial_amount}},\r\n  \"amountCurrency\": \"978\",\r\n  \"bin\": \"870965\",\r\n  \"circuitType\": \"02\",\r\n  \"correlationId\": \"6840974651304\",\r\n  \"fiscalCode\": \"{{fiscalCodeValid}}\",\r\n  \"hpan\": \"{{hpanValid}}\",\r\n  \"idTrxAcquirer\": \"1234567890234\",\r\n  \"idTrxIssuer\": \"68409489648604165\",\r\n  \"mcc\": \"7011\",\r\n  \"mccDescription\": \"string\",\r\n  \"merchantId\": \"{{cv_shop_id}}\",\r\n  \"operationType\": \"00\",\r\n  \"terminalId\": \"66571654\",\r\n  \"trxDate\": \"{{cv_trx_date}}\"\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{environment_url}}/famstransactionerrormanager/fa/transaction-error-manager/transaction/status",
+              "host": [
+                "{{environment_url}}"
+              ],
+              "path": [
+                "famstransactionerrormanager",
+                "fa",
+                "transaction-error-manager",
+                "transaction",
+                "status"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    }
+  ],
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          ""
+        ]
+      }
+    },
+    {
+      "listen": "test",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          ""
+        ]
+      }
+    }
+  ],
+  "variable": [
+    {
+      "key": "cv_provider_id",
+      "value": "1",
+      "type": "string"
+    },
+    {
+      "key": "cv_contract_id",
+      "value": "1",
+      "type": "string"
+    },
+    {
+      "key": "cv_shop_id",
+      "value": "1",
+      "type": "string"
+    },
+    {
+      "key": "cv_trx_date",
+      "value": "1983-05-02T00:00:00.000Z",
+      "type": "string"
+    },
+    {
+      "key": "cv_initial_amount",
+      "value": "42",
+      "type": "string"
+    }
+  ]
+}
