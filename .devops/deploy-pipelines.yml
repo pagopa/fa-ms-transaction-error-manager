@@ -192,8 +192,8 @@ stages:
           name: $(selfHostedAgentPool)
         steps:
           - task: NodeTool@0
-              inputs:
-                versionSpec: '14.x'
+            inputs:
+              versionSpec: '14.x'
           - task: Npm@1
             displayName: Install newman
             inputs:
