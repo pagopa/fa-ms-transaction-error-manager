@@ -18,3 +18,4 @@ newman run <COLLECTION> -e <ENVIRONMENT>
 | `cv_shop_id` | A valid shop Id |
 | `cv_trx_date` | A valid transaction date |
 | `cv_initial_amount` | A valid amount |
+| `cv_index_transaction_status` | Index rappresenting initial Transaction's array length |

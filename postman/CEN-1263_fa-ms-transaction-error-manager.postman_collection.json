@@ -1,7 +1,7 @@
 {
   "info": {
-    "_postman_id": "a4662872-4425-4383-bb33-0a0b276ad050",
-    "name": "fa-ms-transaction-error-manager",
+    "_postman_id": "d94d4674-d0ac-4bce-bced-85f3aeee1133",
+    "name": "fa-ms-transaction-error-manager Copy",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "item": [
@@ -254,16 +254,29 @@
                   "//PRE-CONDITIONS\r",
                   "eval(pm.environment.get('commonFunctions'));\r",
                   "\r",
-                  "pm.request.headers.add({\r",
-                  "'key': pm.collectionVariables.get(\"Api-key\"),\r",
-                  "'value': pm.collectionVariables.get(\"Api-keyValue-io\")    \r",
-                  "});\r",
-                  "\r",
                   "var commonHeader = {};\r",
                   "commonHeader[pm.collectionVariables.get(\"Api-key\")] = pm.collectionVariables.get(\"Api-keyValue\");\r",
                   "commonHeader['Content-Type'] = 'application/json';\r",
                   "\r",
                   "const bodies = [{\r",
+                  "    \"acquirerCode\": \"4964835\",\r",
+                  "    \"acquirerId\": \"650684654635\",\r",
+                  "    \"amount\": pm.collectionVariables.get('cv_initial_amount'),\r",
+                  "    \"amountCurrency\": \"978\",\r",
+                  "    \"bin\": \"870965\",\r",
+                  "    \"circuitType\": \"02\",\r",
+                  "    \"correlationId\": \"6840974651304\",\r",
+                  "    \"fiscalCode\": pm.collectionVariables.get('fiscalCodeValid'),\r",
+                  "    \"hpan\": \"{{hpanValid}}\",\r",
+                  "    \"idTrxAcquirer\": \"1234567890234\",\r",
+                  "    \"idTrxIssuer\": \"68409489648604165\",\r",
+                  "    \"mcc\": \"7011\",\r",
+                  "    \"mccDescription\": \"string\",\r",
+                  "    \"merchantId\": pm.collectionVariables.get('cv_shop_id'),\r",
+                  "    \"operationType\": \"00\",\r",
+                  "    \"terminalId\": \"66571654\",\r",
+                  "    \"trxDate\": pm.collectionVariables.get('cv_trx_date')\r",
+                  "    }, {\r",
                   "    \"amount\": pm.collectionVariables.get('cv_initial_amount'),\r",
                   "    \"bin\": \"870965\",\r",
                   "    \"idTrxIssuer\": \"68409489648604165\",\r",
@@ -292,6 +305,7 @@
                   "];\r",
                   "\r",
                   "const urls = [\r",
+                  "    pm.environment.get(\"environment_url\") + \"/famstransactionerrormanager/fa/transaction-error-manager/transaction/status\",\r",
                   "    pm.environment.get(\"url_mock\") + \"/cash/register/pos/transaction/sender\",\r",
                   "    pm.environment.get(\"url_mock\") + \"/transaction/rtd/send\"\r",
                   "];\r",
@@ -307,13 +321,28 @@
                   "        method: 'POST',\r",
                   "        header: commonHeader,\r",
                   "        body: {mode: 'raw', raw: JSON.stringify(bodies[1])}\r",
+                  "    }, {\r",
+                  "        url: urls[2],\r",
+                  "        method: 'POST',\r",
+                  "        header: commonHeader,\r",
+                  "        body: {mode: 'raw', raw: JSON.stringify(bodies[2])}\r",
                   "    }\r",
                   "];\r",
                   "\r",
                   "asyncSeries([\r",
                   "    (cb) => {\r",
                   "        pm.sendRequest(configs[0], (err, res) => {\r",
-                  "            console.log(res);\r",
+                  "            pm.expect(res).to.have.property('code', 200);\r",
+                  "            pm.expect(res).to.have.property('status', 'OK');\r",
+                  "            let jsonData = res.json();\r",
+                  "            let index = Array.isArray(jsonData) ? jsonData.length : 0;\r",
+                  "            pm.collectionVariables.set('cv_index_transaction_status', index);\r",
+                  "            console.log(\"INDEX \", index);\r",
+                  "            cb(err, res);\r",
+                  "        });\r",
+                  "    },\r",
+                  "    (cb) => {\r",
+                  "        pm.sendRequest(configs[0], (err, res) => {\r",
                   "            pm.expect(res).to.have.property('code', 200);\r",
                   "            pm.expect(res).to.have.property('status', 'OK');\r",
                   "            cb(err, res);\r",
@@ -321,7 +350,6 @@
                   "    },\r",
                   "    (cb) => {\r",
                   "        pm.sendRequest(configs[1], (err, res) => {\r",
-                  "            console.log(res);\r",
                   "            pm.expect(res).to.have.property('code', 200);\r",
                   "            pm.expect(res).to.have.property('status', 'OK');\r",
                   "            cb(err, res);\r",
@@ -342,7 +370,10 @@
                   "    //verify response HTTP status \r",
                   "    pm.response.to.have.status(200);\r",
                   "    let jsonData = pm.response.json();\r",
-                  "    pm.expect(jsonData).to.be.empty;\r",
+                  "    if(Array.isArray(jsonData)){\r",
+                  "        let index = pm.collectionVariables.get('cv_index_transaction_status');\r",
+                  "        pm.expect(jsonData.length).to.be.equals(index);\r",
+                  "    }\r",
                   "});"
                 ],
                 "type": "text/javascript"
@@ -351,7 +382,13 @@
           ],
           "request": {
             "method": "POST",
-            "header": [],
+            "header": [
+              {
+                "key": "{{Api-key}}",
+                "value": "{{Api-keyValue}}",
+                "type": "text"
+              }
+            ],
             "body": {
               "mode": "raw",
               "raw": "{\r\n  \"acquirerCode\": \"4964835\",\r\n  \"acquirerId\": \"650684654635\",\r\n  \"amount\": {{cv_initial_amount}},\r\n  \"amountCurrency\": \"978\",\r\n  \"bin\": \"870965\",\r\n  \"circuitType\": \"02\",\r\n  \"correlationId\": \"6840974651304\",\r\n  \"fiscalCode\": \"{{fiscalCodeValid}}\",\r\n  \"hpan\": \"{{hpanValid}}\",\r\n  \"idTrxAcquirer\": \"1234567890234\",\r\n  \"idTrxIssuer\": \"68409489648604165\",\r\n  \"mcc\": \"7011\",\r\n  \"mccDescription\": \"string\",\r\n  \"merchantId\": \"{{cv_shop_id}}\",\r\n  \"operationType\": \"00\",\r\n  \"terminalId\": \"66571654\",\r\n  \"trxDate\": \"{{cv_trx_date}}\"\r\n}",
@@ -424,6 +461,11 @@
     {
       "key": "cv_initial_amount",
       "value": "42",
+      "type": "string"
+    },
+    {
+      "key": "cv_index_transaction_status",
+      "value": "0",
       "type": "string"
     }
   ]
