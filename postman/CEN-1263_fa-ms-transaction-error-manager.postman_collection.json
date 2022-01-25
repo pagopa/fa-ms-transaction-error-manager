@@ -337,7 +337,6 @@
                   "            let jsonData = res.json();\r",
                   "            let index = Array.isArray(jsonData) ? jsonData.length : 0;\r",
                   "            pm.collectionVariables.set('cv_index_transaction_status', index);\r",
-                  "            console.log(\"INDEX \", index);\r",
                   "            cb(err, res);\r",
                   "        });\r",
                   "    },\r",
@@ -371,7 +370,7 @@
                   "    pm.response.to.have.status(200);\r",
                   "    let jsonData = pm.response.json();\r",
                   "    if(Array.isArray(jsonData)){\r",
-                  "        let index = pm.collectionVariables.get('cv_index_transaction_status');\r",
+                  "        let index = parseInt(pm.collectionVariables.get('cv_index_transaction_status'));\r",
                   "        pm.expect(jsonData.length).to.be.equals(index);\r",
                   "    }\r",
                   "});"
