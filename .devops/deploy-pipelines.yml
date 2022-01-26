@@ -34,18 +34,21 @@ variables:
   imageRepository: '$(K8S_IMAGE_REPOSITORY_NAME)'
   deployNamespace: '$(DEPLOY_NAMESPACE)'
   settingsXmlROsecureFileName: '$(SETTINGS_XML_RO_SECURE_FILE_NAME)'
+  settingsXmlSecureFileName: '$(SETTINGS_XML_RO_SECURE_FILE_NAME)'
+  mavenGoals: 'package'
 
-  isToDeploy: $[and(ne(variables['Build.Reason'], 'PullRequest'), or(eq(variables['Build.SourceBranch'], 'refs/heads/master'), startsWith(variables['Build.SourceBranch'], 'refs/heads/release'), startsWith(variables['Build.SourceBranch'], 'refs/heads/hotfix')))]
+  #isToDeploy: $[and(ne(variables['Build.Reason'], 'PullRequest'), or(eq(variables['Build.SourceBranch'], 'refs/heads/master'), startsWith(variables['Build.SourceBranch'], 'refs/heads/release'), startsWith(variables['Build.SourceBranch'], 'refs/heads/hotfix')))]
+  isToDeploy: false
 
-  ${{ if startsWith(variables['Build.SourceBranch'], 'refs/heads/release-dev') }}:
+  ${{ if or(startsWith(variables['Build.SourceBranch'], 'refs/heads/release-dev'), startsWith(variables['Build.SourceBranch'], 'refs/heads/CEN-')) }}:
     environment: 'DEV'
     dockerRegistryServiceConnection: '$(DEV_CONTAINER_REGISTRY_SERVICE_CONN)'
     kubernetesServiceConnection: '$(DEV_KUBERNETES_SERVICE_CONN)'
     containerRegistry: '$(DEV_CONTAINER_REGISTRY_NAME)'
     deployment: deployment-dev
     selfHostedAgentPool: $(DEV_AGENT_POOL)
-    mavenGoals: 'package'
-    settingsXmlsecureFileName: '$(SETTINGS_XML_RO_SECURE_FILE_NAME)'
+    # postman environment secure file
+    postmanEnvFile: fa_dev.postman_environment.json
   ${{ if or(startsWith(variables['Build.SourceBranch'], 'refs/heads/release-uat'), startsWith(variables['Build.SourceBranch'], 'refs/heads/hotfix')) }}:
     environment: 'UAT'
     dockerRegistryServiceConnection: '$(UAT_CONTAINER_REGISTRY_SERVICE_CONN)'
@@ -53,8 +56,8 @@ variables:
     containerRegistry: '$(UAT_CONTAINER_REGISTRY_NAME)'
     deployment: deployment-uat
     selfHostedAgentPool: $(UAT_AGENT_POOL)
-    mavenGoals: 'package'
-    settingsXmlsecureFileName: '$(SETTINGS_XML_RO_SECURE_FILE_NAME)'
+    # postman environment secure file
+    postmanEnvFile: fa_uat.postman_environment.json
   ${{ if or(eq(variables['Build.SourceBranch'], 'refs/heads/master'),eq(variables['Build.SourceBranch'], 'refs/heads/release-prod')) }}:
     environment: 'PROD'
     dockerRegistryServiceConnection: '$(PROD_CONTAINER_REGISTRY_SERVICE_CONN)'
@@ -62,8 +65,8 @@ variables:
     containerRegistry: '$(PROD_CONTAINER_REGISTRY_NAME)'
     deployment: deployment-prod
     selfHostedAgentPool: $(PROD_AGENT_POOL)
-    mavenGoals: 'package'
-    settingsXmlsecureFileName: '$(SETTINGS_XML_RO_SECURE_FILE_NAME)'
+    # postman environment secure file
+    postmanEnvFile: fa_uat.postman_environment.json
 
 stages:
   - stage: Release
@@ -79,7 +82,7 @@ stages:
             displayName: 'download settings.xml for Maven'
             name: settingsxml
             inputs:
-              secureFile: '$(settingsXmlsecureFileName)'
+              secureFile: '$(settingsXmlSecureFileName)'
               retryCount: '2'
           - task: Bash@3
             displayName: Get POM version
@@ -93,7 +96,7 @@ stages:
               failOnStderr: true
 
   - stage: 'Build'
-    displayName: 'Build_and_Pusblih_to_${{ variables.environment }}'
+    displayName: 'Build_and_Publish_to_${{ variables.environment }}'
     dependsOn: Release
     condition: and(succeeded(), eq(variables.isToDeploy, true))
     variables:
@@ -108,7 +111,7 @@ stages:
             displayName: 'download settings.xml for Maven'
             name: settingsxml
             inputs:
-              secureFile: '$(settingsXmlsecureFileName)'
+              secureFile: '$(settingsXmlSecureFileName)'
               retryCount: '2'
           - task: Maven@3
             inputs:
@@ -136,7 +139,7 @@ stages:
                 latest
                 $(pomversion)
           - task: PublishPipelineArtifact@1
-            displayName: 'Publish Atrifact manifests'
+            displayName: 'Publish Artifact manifests'
             condition: and(succeeded(), eq(variables.isToDeploy, true))
             inputs:
               targetPath: '$(Build.Repository.LocalPath)/manifests'
@@ -176,3 +179,39 @@ stages:
                       $(Pipeline.Workspace)/manifests/pagoPa/$(deployment).yml
                       $(Pipeline.Workspace)/manifests/service.yml
                     containers: '$(containerRegistry)/$(imageRepository):$(pomversion)'
+
+  - stage: Test_e2e
+    displayName: 'Test_e2e_on_${{ variables.environment }}'
+    # TODO: before merging into release-dev modify the following condition
+    #       to depend on previous stages exit status
+    condition: always()
+    jobs:
+      - job: 'Run_Postman_collection_on_${{ variables.environment }}'
+        displayName: 'Run_Postman_collection_on_${{ variables.environment }}'
+        pool:
+          name: $(selfHostedAgentPool)
+        steps:
+          - task: NodeTool@0
+            inputs:
+              versionSpec: '14.x'
+          - task: Npm@1
+            displayName: Install newman
+            inputs:
+              command: custom
+              customCommand: install -g newman
+          - task: DownloadSecureFile@1
+            displayName: 'download postman environment'
+            name: postman_env
+            inputs:
+              secureFile: $(postmanEnvFile)
+          - task: CmdLine@2
+            displayName: Run newman
+            continueOnError: true # Useful to avoid the skipping of result publishing task
+            inputs:
+              script: newman run postman/CEN-1263_fa-ms-transaction-error-manager.postman_collection.json -e $(postman_env.secureFilePath) --reporters cli,junit --reporter-junit-export result/test-result.xml
+          - task: PublishTestResults@2
+            inputs:
+              testResultsFormat: 'JUnit'
+              testResultsFiles: '**/test-*.xml'
+              searchFolder: '$(System.DefaultWorkingDirectory)/result/'
+              testRunTitle: 'Publish Newman Test Results'
